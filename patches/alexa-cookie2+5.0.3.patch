@@ -1,0 +1,65 @@
+diff --git a/node_modules/alexa-cookie2/alexa-cookie.js b/node_modules/alexa-cookie2/alexa-cookie.js
+index be22ba8..47690c2 100644
+--- a/node_modules/alexa-cookie2/alexa-cookie.js
++++ b/node_modules/alexa-cookie2/alexa-cookie.js
+@@ -552,23 +552,31 @@ function AlexaCookie() {
+                 _options.logger && _options.logger('Alexa-Cookie: Get User data');
+                 _options.logger && _options.logger(JSON.stringify(options));
+                 request(options, (error, response, body) => {
+-                    if (!error) {
++                    if (!error && response && response.statusCode === 200 && body) {
+                         try {
+                             if (typeof body !== 'object') body = JSON.parse(body);
+                         } catch (err) {
+                             _options.logger && _options.logger(`Get User data Response: ${JSON.stringify(body)}`);
+-                            callback && callback(err, null);
+-                            return;
++                            // Don't fail — continue with existing amazonPage
++                            _options.logger && _options.logger('Alexa-Cookie: Could not parse user data, continuing with existing amazonPage');
+                         }
+-                        _options.logger && _options.logger(`Get User data Response: ${JSON.stringify(body)}`);
++                        if (body && typeof body === 'object') {
++                            _options.logger && _options.logger(`Get User data Response: ${JSON.stringify(body)}`);
+ 
+-                        Cookie = addCookies(Cookie, response.headers);
++                            Cookie = addCookies(Cookie, response.headers);
+ 
+-                        if (body.marketPlaceDomainName) {
+-                            const pos = body.marketPlaceDomainName.indexOf('.');
+-                            if (pos !== -1) _options.amazonPage = body.marketPlaceDomainName.substr(pos + 1);
++                            if (body.marketPlaceDomainName) {
++                                const pos = body.marketPlaceDomainName.indexOf('.');
++                                if (pos !== -1) _options.amazonPage = body.marketPlaceDomainName.substr(pos + 1);
++                            }
+                         }
+                         loginData.amazonPage = _options.amazonPage;
++                    } else if (!error && response && response.statusCode === 200 && !body) {
++                        _options.logger && _options.logger('Alexa-Cookie: Get User data returned empty body, continuing with existing amazonPage');
++                        loginData.amazonPage = _options.amazonPage;
++                    } else if (!error && response && response.statusCode !== 200) {
++                        _options.logger && _options.logger(`Alexa-Cookie: Get User data returned ${response.statusCode}, continuing with existing amazonPage: ${_options.amazonPage}`);
++                        loginData.amazonPage = _options.amazonPage;
+                     } else if (error && (!_options || !_options.amazonPage)) {
+                         callback && callback(error, null);
+                         return;
+@@ -578,6 +586,12 @@ function AlexaCookie() {
+                         _options.logger && _options.logger('Ignore error while getting user data and amazonPage because previously set amazonPage is available');
+                     }
+ 
++                    // Ensure amazonPage is always set
++                    if (!loginData.amazonPage) {
++                        loginData.amazonPage = _options.amazonPage || 'amazon.com';
++                        _options.logger && _options.logger(`Alexa-Cookie: amazonPage fallback to ${loginData.amazonPage}`);
++                    }
++
+                     loginData.loginCookie = Cookie;
+ 
+                     getLocalCookies(loginData.amazonPage, loginData.refreshToken, (err, localCookie) => {
+diff --git a/node_modules/alexa-cookie2/lib/formerDataStore.json b/node_modules/alexa-cookie2/lib/formerDataStore.json
+new file mode 100644
+index 0000000..394da93
+--- /dev/null
++++ b/node_modules/alexa-cookie2/lib/formerDataStore.json
+@@ -0,0 +1 @@
++{"storeVersion":4,"deviceId":"464241433242333734343636373139333831414335394146413636303243324123413249564c5635564d32573831","map-md":"eyJkZXZpY2VfdXNlcl9kaWN0aW9uYXJ5IjpbXSwiZGV2aWNlX3JlZ2lzdHJhdGlvbl9kYXRhIjp7InNvZnR3YXJlX3ZlcnNpb24iOiIxIn0sImFwcF9pZGVudGlmaWVyIjp7ImFwcF92ZXJzaW9uIjoiMi4yLjQ4NTQwNyIsImJ1bmRsZV9pZCI6ImNvbS5hbWF6b24uZWNobyJ9fQ==","frc":"ab5eg03o+zKh+smJfM68Cy4mNSWkuMM/211ad+alEdCco78gy3h7d+0aUX3YPh2f7wW58pOFPkykb++xPTMfUjF1upxHabeShoX3BdZDG33Npx3zPmun5/I0ctcwoHi38koNY31YtZ5Fqiq0PvLHlaasdki4fgB/GiWE0pyA9U5m1gQxRKGV2H7qRsX3c1o5qMcMFm9fGCSfnbw3GMmQRW5zuLbHmcgDiw2xynzJJCMf8ZpWek/AOHBBJCD9yUgD5FaAbk+Y4kLjUnoZ/l0h56CPjIE+xYDPVVQiD7mIoV6hNqnQG1M7PD5Evnce17+wxDp0Dot0ZseIqjY8i3r5ypo905jAZCW4267a0c5v0ZU0W26cK+5Bx4FZPaBbh4agGcvcovHbUfL3zMAw9MRgWjklOa6SEXGd9g=="}
+\ No newline at end of file
