@@ -19,7 +19,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.27.0",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "alexa-remote2": "^8.0.4",
     "zod": "^3.22.4"
   },
